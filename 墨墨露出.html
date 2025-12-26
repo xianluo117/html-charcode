@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Momo Status v2.0</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+      :root {
+        --bg-color: transparent;
+        --card-bg-color: rgba(255, 248, 250, 0.95);
+        --border-color: rgba(255, 192, 203, 0.5);
+        --text-primary-color: #8b576e;
+        --text-secondary-color: #b48a9d;
+        --accent-color: #f472b6;
+        --accent-soft: rgba(244, 114, 182, 0.15);
+        --tab-bg-color: rgba(255, 240, 244, 0.9);
+        --item-bg-color: rgba(255, 255, 255, 0.65);
+        --item-border-color: rgba(255, 192, 203, 0.4);
+        --item-hover-bg-color: rgba(244, 114, 182, 0.1);
+        --boolean-true-color: #6ee7b7;
+        --boolean-false-color: #f78b8b;
+        --locked-color: #d1d5db;
+        --warning-color: #ef4444;
+      }
+
+      body {
+        font-family: 'Noto Sans SC', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-primary-color);
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      .status-card {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        background-color: var(--card-bg-color);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        font-size: 14px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tabs {
+        display: flex;
+        background-color: var(--tab-bg-color);
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+      }
+
+      .tab-button {
+        flex-grow: 1;
+        padding: 12px 10px;
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+        color: var(--text-secondary-color);
+        font-size: 0.95em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+        outline: none;
+      }
+
+      .tab-button:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 2px;
+        background-color: var(--accent-color);
+        transition: width 0.3s ease;
+      }
+
+      .tab-button:hover {
+        color: var(--accent-color);
+        background-color: var(--accent-soft);
+      }
+
+      .tab-button.active {
+        color: var(--text-primary-color);
+        font-weight: 700;
+      }
+
+      .tab-button.active:after {
+        width: 60%;
+      }
+
+      .tab-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 18px;
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.5s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .section {
+        margin-bottom: 22px;
+      }
+      .section:last-child {
+        margin-bottom: 0;
+      }
+
+      .section-header {
+        font-weight: 700;
+        font-size: 1.1em;
+        color: var(--accent-color);
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .section-header.collapsible {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .property-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 10px;
+      }
+
+      .property-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .property-list.evaluation {
+        gap: 0;
+      }
+
+      .property {
+        background-color: var(--item-bg-color);
+        border-radius: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--item-border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+        gap: 10px;
+      }
+
+      .property:hover {
+        transform: translateY(-2px);
+        background-color: var(--item-hover-bg-color);
+        box-shadow: 0 4px 15px rgba(255, 192, 203, 0.2);
+      }
+
+      .evaluation-item {
+        background-color: var(--item-bg-color);
+        border-radius: 8px;
+        padding: 12px;
+        border: 1px solid var(--item-border-color);
+        margin-bottom: 10px;
+      }
+      .evaluation-title {
+        color: var(--text-secondary-color);
+        font-weight: 500;
+        font-size: 0.95em;
+        margin-bottom: 6px;
+      }
+      .evaluation-text {
+        color: var(--text-primary-color);
+        font-size: 1em;
+        line-height: 1.5;
+      }
+
+      .property-name {
+        color: var(--text-secondary-color);
+        font-weight: 500;
+        font-size: 0.9em;
+        flex-shrink: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .value-main {
+        font-weight: 500;
+        font-size: 1em;
+        color: var(--text-primary-color);
+        text-align: right;
+        white-space: normal;
+        word-wrap: break-word;
+      }
+
+      .task-status {
+        font-weight: 700;
+        font-size: 0.9em;
+      }
+      .task-status.not-started {
+        color: #facc15;
+      }
+      .task-status.in-progress {
+        color: #60a5fa;
+      }
+      .task-status.completed {
+        color: #6ee7b7;
+      }
+      .task-status.failed {
+        color: #f78b8b;
+      }
+
+      .outfit-value {
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .boolean-value.is-true {
+        color: var(--boolean-true-color);
+        font-weight: 700;
+      }
+
+      .boolean-value.is-false {
+        color: var(--boolean-false-color);
+        font-weight: 700;
+      }
+
+      .locked-value {
+        color: var(--locked-color);
+        font-style: italic;
+      }
+
+      .penalty-active {
+        color: var(--warning-color);
+        font-weight: bold;
+      }
+
+      .collapsible-header {
+        cursor: pointer;
+        padding: 10px 12px;
+        border-radius: 6px;
+        margin-bottom: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+      }
+      .collapsible-header.wardrobe-item {
+        background-color: var(--item-bg-color);
+      }
+      .collapsible-header.wardrobe-item:hover {
+        background-color: var(--accent-soft);
+        transform: translateY(-1px);
+      }
+
+      .collapsible-arrow {
+        transition: transform 0.3s ease-in-out;
+        color: var(--accent-color);
+      }
+
+      .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.2, 0, 0.1, 1);
+        padding-left: 15px;
+        border-left: 2px solid var(--accent-soft);
+        margin-top: 5px;
+      }
+      .collapsible-content.no-border {
+        padding-left: 0;
+        border-left: none;
+        margin-top: 0;
+      }
+
+      .collapsible-content.expanded {
+        max-height: 200vh;
+        transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--border-color);
+        gap: 15px;
+      }
+      .list-item:last-child {
+        border-bottom: none;
+      }
+
+      .item-name {
+        color: var(--text-primary-color);
+        flex-shrink: 0;
+      }
+      .item-desc {
+        color: var(--text-secondary-color);
+        font-size: 0.9em;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="status-card" id="status-card">
+      <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'Page1')">状态总览</button>
+        <button class="tab-button" onclick="openTab(event, 'Page2')">情欲记录</button>
+        <button class="tab-button" onclick="openTab(event, 'Page3')">个人物品</button>
+        <button class="tab-button" onclick="openTab(event, 'Page4')">外部讯息</button>
+      </div>
+
+      <div class="tab-container">
+        <!-- PAGE 1: 核心状态 -->
+        <div id="Page1" class="tab-content" style="display: block">
+          <div class="section">
+            <h3 class="section-header">世界状态</h3>
+            <div class="property-grid">
+              <div class="property">
+                <span class="property-name">当前地点:</span><span class="value-main" id="world-location"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">当前日期:</span><span class="value-main" id="world-date"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">当前时间:</span><span class="value-main" id="world-time"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">星期:</span><span class="value-main" id="world-weekday"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">当前天气:</span><span class="value-main" id="world-weather"></span>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <h3 class="section-header">墨墨 - 核心状态</h3>
+            <div class="property-grid">
+              <div class="property">
+                <span class="property-name">金钱:</span><span class="value-main" id="momo-money"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">学分:</span><span class="value-main" id="momo-credit"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">身份暴露度:</span><span class="value-main" id="momo-exposure"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">身处状态:</span><span class="value-main" id="momo-status"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">发布者满意度:</span
+                ><span class="value-main" id="patron-satisfaction"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">任务发放倒计时:</span><span class="value-main" id="task-countdown"></span>
+              </div>
+            </div>
+            <!-- 惩罚状态显示区域 -->
+            <div id="punishment-alert-area" style="margin-top: 10px"></div>
+          </div>
+          <div class="section">
+            <h3 class="section-header">墨墨 - 外观数据</h3>
+            <div class="property-grid">
+              <div class="property">
+                <span class="property-name">发型:</span><span class="value-main" id="momo-hair"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">胸围:</span><span class="value-main" id="momo-bust"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">腰围:</span><span class="value-main" id="momo-waist"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">臀围:</span><span class="value-main" id="momo-hips"></span>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <h3 class="section-header collapsible" onclick="toggleCategory(this)">
+              <span>墨墨 - 当前着装</span>
+              <span class="collapsible-arrow">▶</span>
+            </h3>
+            <div class="collapsible-content no-border">
+              <div class="property-list" id="outfit-section">
+                <div class="property">
+                  <span class="property-name">上装:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-top"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">下装:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-bottom"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">套装:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-set"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">内衣:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-underwear"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">袜子:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-socks"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">鞋子:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-shoes"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">饰品:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-accessory"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">性玩具:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-toy"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">特殊分类:</span
+                  ><span class="value-main outfit-value" id="momo-outfit-special"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE 2: 情欲记录 -->
+        <div id="Page2" class="tab-content">
+          <div class="section">
+            <h3 class="section-header">墨墨 - 色情状态</h3>
+            <div class="property-grid">
+              <div class="property">
+                <span class="property-name">堕落值:</span><span class="value-main" id="momo-depravity"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">堕落等级:</span><span class="value-main" id="momo-depravity-level"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">性欲:</span><span class="value-main" id="momo-arousal"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">总暴露值:</span><span class="value-main" id="momo-total-exposure"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">宫内精液:</span><span class="value-main" id="momo-womb-semen"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">肛门精液:</span><span class="value-main" id="momo-anal-semen"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">淫水数量:</span><span class="value-main" id="momo-arousal-fluid"></span>
+              </div>
+            </div>
+          </div>
+          <div class="section" id="external-semen-section"></div>
+          <div class="section">
+            <h3 class="section-header">墨墨 - 身体开发记录</h3>
+            <div class="property-grid">
+              <div class="property">
+                <span class="property-name">性经验:</span><span class="value-main" id="momo-sex-exp"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">高潮次数:</span><span class="value-main" id="momo-orgasm-count"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">阴道处女:</span
+                ><span class="value-main boolean-value" id="momo-vaginal-virginity"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">肛门处女:</span
+                ><span class="value-main boolean-value" id="momo-anal-virginity"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">口穴开发度:</span><span class="value-main" id="momo-oral-dev"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">私处开发度:</span><span class="value-main" id="momo-private-dev"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">肛门开发度:</span><span class="value-main" id="momo-anal-dev"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">乳房开发度:</span><span class="value-main" id="momo-breast-dev"></span>
+              </div>
+              <div class="property">
+                <span class="property-name">屁股敏感度:</span
+                ><span class="value-main" id="momo-butt-sensitivity"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE 3: 个人物品 -->
+        <div id="Page3" class="tab-content">
+          <div class="section" id="backpack-section"></div>
+          <div class="section" id="wardrobe-section"></div>
+        </div>
+
+        <!-- PAGE 4: 外部讯息与任务 -->
+        <div id="Page4" class="tab-content">
+          <div class="section" id="tasks-container"></div>
+
+          <div class="section">
+            <h3 class="section-header collapsible" onclick="toggleCategory(this)">
+              <span>任务经验统计</span>
+              <span class="collapsible-arrow">▶</span>
+            </h3>
+            <div class="collapsible-content expanded no-border" id="exp-container">
+              <!-- JS动态填充 -->
+            </div>
+          </div>
+
+          <div class="section" id="titles-section">
+            <h3 class="section-header collapsible" onclick="toggleCategory(this)">
+              <span>持有称号</span>
+              <span class="collapsible-arrow">▶</span>
+            </h3>
+            <div class="collapsible-content no-border">
+              <div class="property-list">
+                <div class="property">
+                  <span class="property-name">经济学教授的玩物:</span
+                  ><span class="value-main" id="title-professor"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">篮球部助理:</span
+                  ><span class="value-main" id="title-basketball-assistant"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">篮球部成员满意度:</span
+                  ><span class="value-main" id="title-basketball-satisfaction"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">篮球部日常任务:</span
+                  ><span class="value-main boolean-value" id="title-basketball-daily"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">游泳部助理:</span
+                  ><span class="value-main" id="title-swimming-assistant"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">游泳社成员满意度:</span
+                  ><span class="value-main" id="title-swimming-satisfaction"></span>
+                </div>
+                <div class="property">
+                  <span class="property-name">游泳社日常任务:</span
+                  ><span class="value-main boolean-value" id="title-swimming-daily"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section" id="evaluation-section"></div>
+          <div class="section" id="memo-section"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function openTab(evt, tabName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName('tab-content');
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = 'none';
+        }
+        tablinks = document.getElementsByClassName('tab-button');
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(' active', '');
+        }
+        document.getElementById(tabName).style.display = 'block';
+        evt.currentTarget.className += ' active';
+      }
+
+      function toggleCategory(headerElement) {
+        const content = headerElement.nextElementSibling;
+        const arrow = headerElement.querySelector('.collapsible-arrow');
+        if (!content || !arrow) return;
+        content.classList.toggle('expanded');
+        if (content.classList.contains('expanded')) {
+          content.style.maxHeight = content.scrollHeight + 'px';
+          arrow.style.transform = 'rotate(90deg)';
+        } else {
+          content.style.maxHeight = '0';
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      }
+
+      function SafeGetValue(obj, path, defaultValue = 'N/A') {
+        let keys = Array.isArray(path) ? path : path.split('.');
+        let current = obj;
+        for (let i = 0; i < keys.length; i++) {
+          if (
+            current === undefined ||
+            current === null ||
+            typeof current !== 'object' ||
+            !current.hasOwnProperty(keys[i])
+          ) {
+            return defaultValue;
+          }
+          current = current[keys[i]];
+        }
+        if (current === undefined || current === null) {
+          return defaultValue;
+        }
+        return current;
+      }
+
+      function displayClothingStatus(elementId, clothingObject) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        const items = Object.entries(clothingObject).filter(([key]) => key !== '$meta');
+        if (items.length === 0) {
+          element.innerText = '无';
+          return;
+        }
+        const displayText = items
+          .map(([name, position]) => {
+            return position ? `${name}: ${position}` : name;
+          })
+          .join('； ');
+        element.innerText = displayText;
+      }
+
+      function createSimpleList(containerId, headerText, items, emptyText, formatter) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = `<h3 class="section-header">${headerText}</h3>`;
+        const listContainer = document.createElement('div');
+        listContainer.className = 'property-list';
+
+        // 兼容性优化: 自动过滤$meta，并遍历所有其他键
+        const filteredItems = Object.entries(items).filter(([key]) => key !== '$meta');
+
+        if (filteredItems.length > 0) {
+          for (const [key, value] of filteredItems) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'property';
+            itemDiv.innerHTML = formatter(key, value);
+            listContainer.appendChild(itemDiv);
+          }
+        } else {
+          const noItemDiv = document.createElement('div');
+          noItemDiv.className = 'property';
+          noItemDiv.innerHTML = `<span class="property-name">${emptyText}</span>`;
+          listContainer.appendChild(noItemDiv);
+        }
+        container.appendChild(listContainer);
+      }
+
+      // 专门用于任务经验的网格生成器
+      function createExpGrid(containerId, items) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'property-grid';
+
+        const filteredItems = Object.entries(items).filter(([key]) => key !== '$meta');
+
+        if (filteredItems.length > 0) {
+          for (const [key, value] of filteredItems) {
+            // 简化键名，去掉"任务经验"后缀以节省空间
+            const shortName = key.replace('任务经验', '');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'property';
+            itemDiv.innerHTML = `<span class="property-name">${shortName}:</span><span class="value-main">${value}</span>`;
+            grid.appendChild(itemDiv);
+          }
+        } else {
+          grid.innerHTML = '<div class="property"><span class="property-name">暂无记录</span></div>';
+        }
+        container.appendChild(grid);
+      }
+
+      function createEvaluationList(containerId, headerText, items) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = `<h3 class="section-header">${headerText}</h3>`;
+        const listContainer = document.createElement('div');
+        listContainer.className = 'property-list evaluation';
+
+        const filteredItems = {
+          同学评价: SafeGetValue(items, '墨墨.外部评价.同学评价', '暂无'),
+          老师评价: SafeGetValue(items, '墨墨.外部评价.老师评价', '暂无'),
+          暗网评价: SafeGetValue(items, '墨墨.外部评价.暗网评价', '暂无'),
+        };
+
+        for (const [title, text] of Object.entries(filteredItems)) {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'evaluation-item';
+          itemDiv.innerHTML = `<div class="evaluation-title">${title}</div><div class="evaluation-text">${text}</div>`;
+          listContainer.appendChild(itemDiv);
+        }
+        container.appendChild(listContainer);
+      }
+
+      function createCollapsibleWardrobe(containerId, headerText, items, itemClass, nameClass, descClass) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = `<h3 class="section-header">${headerText}</h3>`;
+        const categories = {
+          上装: '墨墨.衣柜.上装',
+          下装: '墨墨.衣柜.下装',
+          套装: '墨墨.衣柜.套装',
+          内衣: '墨墨.衣柜.内衣',
+          袜子: '墨墨.衣柜.袜子',
+          鞋子: '墨墨.衣柜.鞋子',
+          饰品: '墨墨.衣柜.饰品',
+          性玩具: '墨墨.衣柜.性玩具',
+          特殊分类: '墨墨.衣柜.特殊分类',
+        };
+        for (const [categoryName, dataPath] of Object.entries(categories)) {
+          const categoryItems = SafeGetValue(items, dataPath, {});
+          const filteredItems = Object.entries(categoryItems).filter(([key]) => key !== '$meta');
+
+          const categoryDiv = document.createElement('div');
+          const header = document.createElement('div');
+          header.className = 'collapsible-header wardrobe-item';
+          header.onclick = () => toggleCategory(header);
+          header.innerHTML = `<span class="property-name">${categoryName} (${filteredItems.length})</span><span class="collapsible-arrow">▶</span>`;
+
+          const list = document.createElement('div');
+          list.className = 'collapsible-content';
+
+          if (filteredItems.length > 0) {
+            const innerList = document.createElement('div');
+            innerList.className = 'property-list';
+            for (const [name, description] of filteredItems) {
+              const itemDiv = document.createElement('div');
+              itemDiv.className = itemClass;
+              const descText =
+                typeof description === 'string' || typeof description === 'number'
+                  ? String(description).split('(基础暴露值')[0].trim()
+                  : '无效描述';
+              itemDiv.innerHTML = `<span class="${nameClass}">${name}</span><span class="${descClass}">${descText}</span>`;
+              innerList.appendChild(itemDiv);
+            }
+            list.appendChild(innerList);
+          } else {
+            const noItemDiv = document.createElement('div');
+            noItemDiv.className = 'list-item';
+            noItemDiv.style.justifyContent = 'center';
+            noItemDiv.innerHTML = `<span class="item-desc">空</span>`;
+            list.appendChild(noItemDiv);
+          }
+          categoryDiv.appendChild(header);
+          categoryDiv.appendChild(list);
+          container.appendChild(categoryDiv);
+        }
+      }
+
+      function createTasksList(containerId, tasksObject) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const tasks = Object.entries(tasksObject).filter(([key]) => key !== '$meta' && key !== 'template');
+
+        if (tasks.length === 0) {
+          container.innerHTML = `<h3 class="section-header">任务信息</h3><div class="property"><span class="property-name">当前无任务</span></div>`;
+          return;
+        }
+
+        const header = document.createElement('h3');
+        header.className = 'section-header';
+        header.textContent = '任务信息';
+        container.appendChild(header);
+
+        tasks.forEach(([taskName, taskDetails]) => {
+          const taskDiv = document.createElement('div');
+          taskDiv.className = 'section';
+          taskDiv.style.marginBottom = '15px';
+
+          const statusClassMap = {
+            未开始: 'not-started',
+            已接受: 'in-progress',
+            进行中: 'in-progress',
+            已完成: 'completed',
+            已失败: 'failed',
+          };
+          const statusClass = statusClassMap[taskDetails.任务状态] || '';
+
+          const taskHeader = document.createElement('div');
+          taskHeader.className = 'collapsible-header wardrobe-item';
+          taskHeader.onclick = () => toggleCategory(taskHeader);
+          taskHeader.innerHTML = `
+                <span class="property-name">${taskName}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                   <span class="task-status ${statusClass}">${taskDetails.任务状态 || '未知'}</span>
+                   <span class="collapsible-arrow">▶</span>
+                </div>
+            `;
+
+          const taskContent = document.createElement('div');
+          taskContent.className = 'collapsible-content';
+
+          // 默认展开当前进行中的任务
+          if (taskDetails.任务状态 === '已接受' || taskDetails.任务状态 === '进行中') {
+            taskContent.classList.add('expanded');
+            taskContent.style.maxHeight = '1000px';
+            const arrow = taskHeader.querySelector('.collapsible-arrow');
+            if (arrow) arrow.style.transform = 'rotate(90deg)';
+          }
+
+          const propertyList = document.createElement('div');
+          propertyList.className = 'property-list';
+
+          // 更新后的任务字段映射
+          const fields = {
+            任务类型: taskDetails.任务类型,
+            时长任务: taskDetails.时长任务 ? '是' : '否',
+            地点: taskDetails.任务地点,
+            服装要求: taskDetails.任务服装要求,
+            基础目标: taskDetails.基础任务目标,
+            完成标准: taskDetails.基础任务完成标准,
+            额外内容: taskDetails.额外任务内容 || '无',
+            任务进度: taskDetails.任务进度,
+            失败判定: taskDetails.任务失败判定,
+            失败惩罚: taskDetails.任务失败惩罚,
+            截止时间: taskDetails.任务结束时间,
+            基础报酬: `¥ ${taskDetails.任务基础报酬}`,
+            额外奖励: `¥ ${taskDetails.额外任务奖励 || 0}`,
+          };
+
+          for (const [key, value] of Object.entries(fields)) {
+            if (value === '无' || value === undefined) continue; // 稍微清理一下显示，不显示无意义字段
+            const propDiv = document.createElement('div');
+            propDiv.className = 'property';
+            propDiv.innerHTML = `<span class="property-name">${key}:</span><span class="value-main">${value}</span>`;
+            propertyList.appendChild(propDiv);
+          }
+
+          const evidenceHeader = document.createElement('div');
+          evidenceHeader.className = 'property-name';
+          evidenceHeader.style.marginTop = '10px';
+          evidenceHeader.style.paddingLeft = '12px';
+          evidenceHeader.textContent = '已保存证据:';
+          propertyList.appendChild(evidenceHeader);
+
+          const evidences = taskDetails.当前任务已保存证据 || {};
+          const filteredEvidences = Object.entries(evidences).filter(([key]) => key !== '$meta');
+
+          if (filteredEvidences.length > 0) {
+            for (const [key, value] of filteredEvidences) {
+              const propDiv = document.createElement('div');
+              propDiv.className = 'property';
+              propDiv.innerHTML = `<span class="property-name" style="flex-shrink: 1;">${key}:</span><span class="value-main">${value}</span>`;
+              propertyList.appendChild(propDiv);
+            }
+          } else {
+            const propDiv = document.createElement('div');
+            propDiv.className = 'property';
+            propDiv.innerHTML = `<span class="property-name">无</span>`;
+            propertyList.appendChild(propDiv);
+          }
+
+          taskContent.appendChild(propertyList);
+          taskDiv.appendChild(taskHeader);
+          taskDiv.appendChild(taskContent);
+          container.appendChild(taskDiv);
+        });
+      }
+
+      function checkPunishmentStatus(punishmentData) {
+        const area = document.getElementById('punishment-alert-area');
+        if (!area) return;
+        area.innerHTML = '';
+
+        const isPunished = SafeGetValue(punishmentData, '惩罚中', false);
+
+        if (isPunished === true || String(isPunished).toLowerCase() === 'true') {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'property';
+          alertDiv.style.borderColor = 'var(--warning-color)';
+          alertDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+
+          const measures = SafeGetValue(punishmentData, '惩罚措施', {});
+          const measureList = Object.entries(measures)
+            .filter(([key]) => key !== '$meta')
+            .map(([k, v]) => `${k}: ${v}`)
+            .join('; ');
+
+          alertDiv.innerHTML = `
+                <span class="property-name penalty-active">⚠ 当前处于惩罚状态</span>
+                <span class="value-main" style="color: var(--warning-color); font-size: 0.9em;">${measureList || '查看详情'}</span>
+            `;
+          area.appendChild(alertDiv);
+        }
+      }
+
+      async function initDisplay() {
+        let characterData = {};
+        try {
+          const messages = await getChatMessages(getCurrentMessageId());
+          characterData = messages && messages.length > 0 && messages[0].data ? messages[0].data.stat_data || {} : {};
+        } catch (error) {
+          console.error('加载聊天数据时出错:', error);
+          return;
+        }
+
+        const getValue = (path, defaultValue) => SafeGetValue(characterData, path, defaultValue);
+
+        const setValue = (id, path, defaultValue = 'N/A', prefix = '', suffix = '') => {
+          const element = document.getElementById(id);
+          if (element) {
+            const value = getValue(path, defaultValue);
+            element.innerText = `${prefix}${String(value)}${suffix}`;
+          }
+        };
+
+        const setBooleanValue = (id, path, trueText, falseText, defaultValue = true) => {
+          const element = document.getElementById(id);
+          if (element) {
+            const val = getValue(path, defaultValue);
+            const isTrue = val === true || String(val).toLowerCase() === 'true';
+            element.innerText = isTrue ? trueText : falseText;
+            element.className = 'value-main boolean-value ' + (isTrue ? 'is-true' : 'is-false');
+          }
+        };
+
+        const setLockedValue = (id, path, unlockedPrefix = '', unlockedSuffix = '') => {
+          const element = document.getElementById(id);
+          if (element) {
+            const value = getValue(path, -1);
+            if (value == -1) {
+              element.innerText = '未解锁';
+              element.className = 'value-main locked-value';
+            } else {
+              element.innerText = `${unlockedPrefix}${String(value)}${unlockedSuffix}`;
+              element.className = 'value-main';
+            }
+          }
+        };
+
+        // 世界状态
+        const worldDateElement = document.getElementById('world-date');
+        if (worldDateElement) {
+          const year = getValue('世界.日期.年', 'YYYY');
+          const month = getValue('世界.日期.月', 'MM');
+          const day = getValue('世界.日期.日', 'DD');
+          worldDateElement.innerText = `${year}年${String(month).padStart(2, '0')}月${String(day).padStart(2, '0')}日`;
+        }
+
+        const worldTimeElement = document.getElementById('world-time');
+        if (worldTimeElement) {
+          const hour = getValue('世界.时间.小时', 'HH');
+          const minute = getValue('世界.时间.分钟', 'mm');
+          worldTimeElement.innerText = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+
+        const weekdayMap = {
+          1: '星期一',
+          2: '星期二',
+          3: '星期三',
+          4: '星期四',
+          5: '星期五',
+          6: '星期六',
+          7: '星期日',
+        };
+        const weekdayElement = document.getElementById('world-weekday');
+        if (weekdayElement) {
+          const weekdayValue = String(getValue('世界.星期', 'N/A'));
+          weekdayElement.innerText = weekdayMap[weekdayValue] || '未知';
+        }
+
+        setValue('world-location', '世界.地点', '未知');
+        setValue('world-weather', '世界.天气', '晴朗');
+
+        // 墨墨核心
+        setValue('momo-money', '墨墨.常规物品.金钱', '0', '¥ ');
+        setValue('momo-credit', '墨墨.常规物品.学分', '0');
+        setValue('momo-exposure', '墨墨.身份暴露度', '0');
+        setValue('momo-status', '墨墨.身处状态', '未知');
+
+        // 发布者信息
+        setValue('patron-satisfaction', '发布者.发布者满意度', '0');
+        setValue('task-countdown', '发布者.任务发放倒计时', '0', '', ' 小时');
+        checkPunishmentStatus(getValue('发布者', {}));
+
+        // 外观
+        setValue('momo-hair', '墨墨.外观数据.发型', '未知');
+        setValue('momo-bust', '墨墨.外观数据.胸围', '未知');
+        setValue('momo-waist', '墨墨.外观数据.腰围', '未知');
+        setValue('momo-hips', '墨墨.外观数据.臀围', '未知');
+
+        // 服装
+        displayClothingStatus('momo-outfit-top', getValue('墨墨.服装状态.上装', {}));
+        displayClothingStatus('momo-outfit-bottom', getValue('墨墨.服装状态.下装', {}));
+        displayClothingStatus('momo-outfit-set', getValue('墨墨.服装状态.套装', {}));
+        displayClothingStatus('momo-outfit-underwear', getValue('墨墨.服装状态.内衣', {}));
+        displayClothingStatus('momo-outfit-socks', getValue('墨墨.服装状态.袜子', {}));
+        displayClothingStatus('momo-outfit-shoes', getValue('墨墨.服装状态.鞋子', {}));
+        displayClothingStatus('momo-outfit-accessory', getValue('墨墨.服装状态.饰品', {}));
+        displayClothingStatus('momo-outfit-toy', getValue('墨墨.服装状态.性玩具', {}));
+        displayClothingStatus('momo-outfit-special', getValue('墨墨.服装状态.特殊分类', {}));
+
+        // 色情状态
+        setValue('momo-depravity', '墨墨.色情状态.堕落值', '0');
+        setValue('momo-depravity-level', '墨墨.色情状态.堕落等级', '0');
+        setValue('momo-arousal', '墨墨.色情状态.性欲', '0');
+        setValue('momo-total-exposure', '墨墨.色情状态.暴露值', '0');
+        setValue('momo-womb-semen', '墨墨.色情状态.宫内精液', '0', '', 'ml');
+        setValue('momo-anal-semen', '墨墨.色情状态.肛门精液', '0', '', 'ml');
+        setValue('momo-arousal-fluid', '墨墨.色情状态.淫水数量', '0', '', 'ml');
+
+        createSimpleList(
+          'external-semen-section',
+          '外部精液痕迹',
+          getValue('墨墨.色情状态.外部精液', {}),
+          '无',
+          (k, v) => `<span class="property-name">${k}:</span><span class="value-main">${v}ml</span>`,
+        );
+
+        // 身体记录
+        setValue('momo-sex-exp', '墨墨.身体色情记录.性经验', '0', '次数: ');
+        setValue('momo-orgasm-count', '墨墨.身体色情记录.高潮次数', '0');
+        setBooleanValue('momo-vaginal-virginity', '墨墨.身体色情记录.阴道处女', '是', '否');
+        setBooleanValue('momo-anal-virginity', '墨墨.身体色情记录.肛门处女', '是', '否');
+        setValue('momo-oral-dev', '墨墨.身体色情记录.口穴开发度', '0');
+        setValue('momo-private-dev', '墨墨.身体色情记录.私处开发度', '0');
+        setValue('momo-anal-dev', '墨墨.身体色情记录.肛门开发度', '0');
+        setValue('momo-breast-dev', '墨墨.身体色情记录.乳房开发度', '0');
+        setValue('momo-butt-sensitivity', '墨墨.身体色情记录.屁股敏感度', '0');
+
+        // 背包 - 兼容性更新: 动态读取所有key
+        createSimpleList(
+          'backpack-section',
+          '背包',
+          getValue('墨墨.背包.物品', {}),
+          '空',
+          (k, v) => `<span class="property-name">${k}</span><span class="value-main">x ${v}</span>`,
+        );
+
+        // 衣柜
+        createCollapsibleWardrobe('wardrobe-section', '衣柜', characterData, 'list-item', 'item-name', 'item-desc');
+
+        // 任务系统更新
+        createTasksList('tasks-container', getValue('任务', {}));
+
+        // 任务经验更新
+        createExpGrid('exp-container', getValue('墨墨.任务经验', {}));
+
+        // 称号与评价
+        setLockedValue('title-professor', '墨墨.称号.经济学教授的玩物', '好感度: ');
+        setLockedValue('title-basketball-assistant', '墨墨.称号.篮球部助理', '进度: ');
+        setValue('title-basketball-satisfaction', '墨墨.称号.篮球部成员满意度', '0');
+        setBooleanValue('title-basketball-daily', '墨墨.称号.篮球部日常任务', '已开启', '未开启');
+        setLockedValue('title-swimming-assistant', '墨墨.称号.游泳部助理', '进度: ');
+        setValue('title-swimming-satisfaction', '墨墨.称号.游泳社成员满意度', '0');
+        setBooleanValue('title-swimming-daily', '墨墨.称号.游泳社日常任务', '已开启', '未开启');
+
+        createEvaluationList('evaluation-section', '外部评价', characterData);
+        createSimpleList(
+          'memo-section',
+          '备忘录',
+          getValue('墨墨.备忘录', {}),
+          '无待办事项',
+          (k, v) => `<span class="property-name">${k}:</span><span class="value-main">${v}</span>`,
+        );
+      }
+
+      document.addEventListener('DOMContentLoaded', initDisplay);
+    </script>
+  </body>
+</html>
